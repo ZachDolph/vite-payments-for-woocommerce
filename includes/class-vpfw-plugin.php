@@ -30,9 +30,8 @@ class WC_Vite_Gateway_Plugin {
   /**
 	 * Run the plugin.
 	 */
-	protected function _run() {
+	public function _run() {
     register_activation_hook( $this->file, array( $this, 'activate' ) );
-		require_once $this->includes_path . 'functions.php';
 		$this->_load_handlers();
 	}
 
@@ -72,10 +71,8 @@ class WC_Vite_Gateway_Plugin {
 
 		// Load handlers.
 		require_once VPFW_DIR . 'includes/class-vpfw-settings.php';
-		require_once VPFW_DIR . 'includes/class-vpfw-cart-handler.php';
 
 		$this->settings       = new WC_Vite_Gateway_Settings();
-		$this->cart           = new WC_Vite_Gateway_Cart_Handler();
 	}
 
 

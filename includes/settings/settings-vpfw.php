@@ -83,6 +83,12 @@ $settings = array(
     'title' => 'Payment Timeout',
     'type'  => 'text',
     'default'     => '900'
+  ),
+  'show_icons'     => array(
+    'title'       => __( 'Show icons', 'vite-payments-for-woocommerce' ),
+    'type'        => 'checkbox',
+    'label'       => __( 'Display token icons on checkout page.', 'vite-payments-for-woocommerce' ),
+    'default'     => 'yes'
   )
 );
 

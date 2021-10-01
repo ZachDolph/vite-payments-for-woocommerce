@@ -92,11 +92,11 @@ function vpfw_init_gateway_class() {
       // Set our window object vars for react app
 			// Payment gateway plugin ID
 			$this->id = 'vite-payments-for-woocommerce';
-			// URL of the checkout page icon displayed near gateway name
-			$this->icon = '';
+      // Text to display on Woo's Place Order button
+      $this->order_button_text  = __( 'Proceed to Vite', 'vite-payments-for-woocommerce' );
 			// Custom Forms
-			$this->has_fields = true;
-			$this->method_title = 'Vite Payments for Woocommerce Gateway';
+			$this->has_fields = false;
+			$this->method_title = 'Vite Payments for Woocommerce';
 			// Displayed on the options page
 			$this->method_description = 'Accept Vite payments on your Woocommerce store.';
 			// Gateway currently supports simple payments but can be used for subscriptions, refunds, saved payment methods, etc.
@@ -137,6 +137,29 @@ function vpfw_init_gateway_class() {
       $this->form_fields = include VPFW_DIR . 'includes/settings/settings-vpfw.php';
 	 	}
 
+    /**
+     * Get gateway icon.
+     * @return string
+     */
+    public function get_icon() {
+    	if ( $this->get_option( 'show_icons' ) === 'no' ) {
+    		return '';
+    	}
+    	$image_path = VPFW_DIR . 'assets/img';
+    	$icon_html  = '';
+			// TESTING USING COINBASE'S ICONS
+    	$methods    = get_option( 'vite_payment_methods', array( 'vite', 'ethereum' ) );
+    	// Load icon for each available payment method.
+    	foreach ( $methods as $m ) {
+    		$path = realpath( $image_path . '/' . $m . '.png' );
+    		if ( $path && dirname( $path ) === $image_path && is_file( $path ) ) {
+    			$url        = WC_HTTPS::force_https_url( plugins_url( '/assets/img/' . $m . '.png', __FILE__ ) );
+    			$icon_html .= '<img width="26" src="' . esc_attr( $url ) . '" alt="' . esc_attr__( $m, 'vite' ) . '" />';
+    		}
+    	}
+    	return apply_filters( 'woocommerce_gateway_icon', $icon_html, $this->id );
+    }
+
 
 		/*
 		 * Payment Processing
@@ -151,7 +174,7 @@ function vpfw_init_gateway_class() {
 
       // Could add query args if we wanted
 			//$args = array();
-      
+
       // TODO
       // Need to handle exchange rate here and get price for Vite in USD
       // Do we need to add a spread to handle volatility and lock in price?
@@ -167,11 +190,11 @@ function vpfw_init_gateway_class() {
       $order = wc_get_order( $_GET['id'] );
       // Received the payment
       $order->payment_complete();
-      $order->reduce_order_stock();				
+      $order->reduce_order_stock();
       // Note to customer
-      $order->add_order_note( 'Vite Payment Successful! Thank you!', false );				
+      $order->add_order_note( 'Vite Payment Successful! Thank you!', false );
       // Empty cart
-      $woocommerce->cart->empty_cart();				
+      $woocommerce->cart->empty_cart();
       // Redirect to the thank you page
       return array(
       	'result' => 'success',
@@ -194,7 +217,7 @@ function vpfw_init_gateway_class() {
      * Shortcode for vitepay react app
      */
     public function vitepayapp_shortcode() {
-    
+
     	return '&lt;div style="display: none;" id="VitePayAppID" >&lt;/div><script src="'. VPFW_URL . 'includes/vitepay-react-app/build/static/js/main.5c84011b.js"></script><script>window.amountDefault='. $this->amountDefault .' window.tokenDefault='. $this->tokenDefault .' window.defaultMemo='. $this->defaultMemo .' window.addressDefault='. $this->addressDefault .' window.nodeURL='. $this->nodeURL .' window.httpURL='. $this->httpURL .' window.paymentTimeout='. $this->paymentTimeout .' window.onPaymentSuccess='. $this->onPaymentSuccess .' window.onPaymentFailure='. $this->onPaymentFailure .'</script>';
     }
  	}
