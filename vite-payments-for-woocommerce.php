@@ -37,13 +37,31 @@ if (!defined('VPFW_FILE'))    define('VPFW_FILE', plugin_basename(__FILE__));
 if (!defined('VPFW_DIR'))     define('VPFW_DIR', plugin_dir_path(__FILE__));
 if (!defined('VPFW_URL'))     define('VPFW_URL', plugin_dir_url( __FILE__ ));
 
+/**
+ * Return instance of WC_Vite_Gateway_Plugin.
+ *
+ * @return WC_Vite_Gateway_Plugin
+ */
+function wc_vite_pay_gateway() {
+	static $plugin;
+
+	if ( ! isset( $plugin ) ) {
+		require_once 'includes/class-vpfw-plugin.php';
+
+		$plugin = new WC_Vite_Gateway_Plugin( __FILE__, VPFW_VERSION );
+	}
+
+	return $plugin;
+}
+
+wc_vite_pay_gateway()->_run();
 
 /*
  * This action hook registers our PHP class as a WooCommerce payment gateway
  */
 add_filter( 'woocommerce_payment_gateways', 'vpfw_add_gateway_class' );
 function vpfw_add_gateway_class( $gateways ) {
-	$gateways[] = 'WC_Vite_Gateway'; // your class name is here
+	$gateways[] = 'WC_Vite_Gateway';
 	return $gateways;
 }
 
@@ -102,9 +120,6 @@ function vpfw_init_gateway_class() {
 
       // This action hook saves the settings
 			add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
-			
-      // Could enqueue js here if custom scripts are ever needed
-			//add_action( 'wp_enqueue_scripts', array( $this, 'payment_scripts' ) );
 
 			// Register webhooks here for payment status callback
 			add_action( 'woocommerce_api_vite-payment-success', array( $this, 'vite_payment_success_hook' ) );
@@ -119,88 +134,7 @@ function vpfw_init_gateway_class() {
  		 * Plugin options (admin settings)
  		 */
  		public function init_form_fields(){
-
-			$this->form_fields = array(
-				'enabled' => array(
-					'title' => 'Enable/Disable',
-					'label' => 'Enable Vite Payments for Woocommerce',
-					'type'  => 'checkbox',
-					'description' => '',
-					'default'     => 'no'
-				),
-				'title' => array(
-					'title' => 'Title',
-					'type'  => 'text',
-					'description' => 'Title displayed to user during checkout.',
-					'default'     => 'Vite (Smart Contract)',
-					'desc_tip'    => true
-				),
-				'description' => array(
-					'title' => 'Description',
-					'type'  => 'textarea',
-					'description' => 'Description displayed to user during checkout.',
-					'default'     => 'Pay with Vite using smart contracts.'
-				),
-				'testmode' => array(
-					'title' => 'Test Mode',
-					'label' => 'Enable Test Mode',
-					'type'  => 'checkbox',
-					'description' => 'Enable test mode on the Vite payment gateway using test address.',
-					'default'     => 'yes',
-					'desc_tip'    => true
-				),
-				'test_contract_address' => array(
-					'title' => 'Test Contract Address',
-					'type'  => 'text',
-          'default'     => 'vite_10a86218cf37c795ebbdf8a7da643d92e22d860d2b747e049e'
-				),
-				'live_contract_address' => array(
-					'title' => 'Live Contract Address',
-					'type'  => 'text',
-          'default'     => 'vite_10a86218cf37c795ebbdf8a7da643d92e22d860d2b747e049e'
-				),
-        'amount_default' => array(
-					'title' => 'Amount Default',
-					'type'  => 'text',
-					'default'     => '1'
-        ),
-        'token_default' => array(
-					'title' => 'Token Default',
-					'type'  => 'text',
-					'default'     => 'tti_5649544520544f4b454e6e40'
-        ),
-        'default_memo' => array(
-					'title' => 'Default Memo',
-					'type'  => 'text',
-					'default'     => '123abcd'
-        ),
-        'node_url' => array(
-					'title' => 'Live Node URL',
-					'type'  => 'text',
-					'default'     => 'wss://buidl.vite.net/gvite/ws'
-        ),
-        'http_url' => array(
-					'title' => 'Live HTTP URL',
-					'type'  => 'text',
-					'default'     => 'http://buidl.vite.net/gvite/http'
-        ),
-        'test_node_url' => array(
-					'title' => 'Test Node URL',
-					'type'  => 'text',
-					'default'     => 'wss://buidl.vite.net/gvite/ws'
-        ),
-        'test_http_url' => array(
-					'title' => 'Test HTTP URL',
-					'type'  => 'text',
-					'default'     => 'http://buidl.vite.net/gvite/http'
-        ),
-        'payment_timeout' => array(
-					'title' => 'Payment Timeout',
-					'type'  => 'text',
-					'default'     => '900'
-        )
-			);
-
+      $this->form_fields = include VPFW_DIR . 'includes/settings/settings-vpfw.php';
 	 	}
 
 
@@ -261,7 +195,7 @@ function vpfw_init_gateway_class() {
      */
     public function vitepayapp_shortcode() {
     
-    	return '&lt;div id="vitepay-react-app" >&lt;/div><script src="'. VPFW_URL . 'includes/vitepay-react-app/build/static/js/main.e96acc02.js"></script><script>window.amountDefault='. $this->amountDefault .' window.tokenDefault='. $this->tokenDefault .' window.defaultMemo='. $this->defaultMemo .' window.addressDefault='. $this->addressDefault .' window.nodeURL='. $this->nodeURL .' window.httpURL='. $this->httpURL .' window.paymentTimeout='. $this->paymentTimeout .' window.onPaymentSuccess='. $this->onPaymentSuccess .' window.onPaymentFailure='. $this->onPaymentFailure .'</script>';
+    	return '&lt;div style="display: none;" id="VitePayAppID" >&lt;/div><script src="'. VPFW_URL . 'includes/vitepay-react-app/build/static/js/main.5c84011b.js"></script><script>window.amountDefault='. $this->amountDefault .' window.tokenDefault='. $this->tokenDefault .' window.defaultMemo='. $this->defaultMemo .' window.addressDefault='. $this->addressDefault .' window.nodeURL='. $this->nodeURL .' window.httpURL='. $this->httpURL .' window.paymentTimeout='. $this->paymentTimeout .' window.onPaymentSuccess='. $this->onPaymentSuccess .' window.onPaymentFailure='. $this->onPaymentFailure .'</script>';
     }
  	}
 }

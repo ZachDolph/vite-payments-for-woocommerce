@@ -1,0 +1,69 @@
+.vpfw-checkout-buttons {
+	text-align: center;
+	margin: 1em 0;
+	overflow: hidden;
+}
+.vpfw-checkout-buttons .woocommerce-error {
+	text-align: left;
+}
+.vpfw-checkout-buttons__separator {
+	display: block;
+	margin: 0 0 1em;
+}
+.vpfw-checkout-buttons__button {
+	display: inline-block;
+	text-decoration: none !important;
+	border: 0 !important;
+	padding-top: 1em;
+}
+.vpfw-checkout-buttons__button img {
+	margin: 0 auto;
+}
+.vpfw-button-widget .vpfw-button,
+.vpfw-button-widget .vpfw-button:hover {
+	background: transparent;
+	box-shadow: none;
+	border: none;
+}
+.vpfw-cart-widget-button {
+	display: inline-block;
+	text-decoration: none !important;
+	border: 0 !important;
+}
+.site-header .widget_shopping_cart p.buttons.vpfw-cart-widget-spb {
+    padding: 0 1em 1em;
+}
+.site-header .widget_shopping_cart .woocommerce-mini-cart__empty-message + p.buttons.vpfw-cart-widget-spb {
+	display: none;
+}
+
+.payment_method_vpfw img {
+	max-height: 68px !important;
+	border-radius: 0;
+}
+
+.wc-gateway-vpfw-cancel {
+	display: block;
+	text-align: center;
+	padding: 10px;
+}
+
+#woo_vpfw_button_checkout {
+	display: none;
+}
+
+#payment .place-order .button {
+	display: block;
+}
+.wc_vpfw_small_payment_buttons {
+	width: 150px;
+	display: inline-block;
+}
+.wc_vpfw_medium_payment_buttons {
+	width: 250px;
+	display: inline-block;
+}
+.wc_vpfw_large_payment_buttons {
+	width: 350px;
+	display: inline-block;
+}
