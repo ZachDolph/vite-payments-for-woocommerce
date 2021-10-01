@@ -25,8 +25,8 @@ Vite Payments for Woocommerce is blockchain technology powering your Woocommerce
 
 == Links ==
 
-* [Website](WEBSITE URL FIX ME)
-* [Documentation](DOC URL FIX ME)
+* [Website](https://zachdolph.github.io/vite-payments-for-woocommerce/)
+* [Documentation](https://zachdolph.github.io/vite-payments-for-woocommerce/)
 
 == Screenshots ==
 
