@@ -1,6 +1,6 @@
 <?php
 /**
- * PayPal Checkout Plugin.
+ * Vite Payments for Woocommerce Plugin Class
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
