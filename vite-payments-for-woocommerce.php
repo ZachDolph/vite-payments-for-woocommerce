@@ -47,7 +47,8 @@ function wc_vite_pay_gateway()
 {
 	static $plugin;
 
-	if (!isset($plugin)) {
+	if (!isset($plugin))
+	{
 		require_once 'includes/class-vpfw-plugin.php';
 		$plugin = new WC_Vite_Gateway_Plugin(__FILE__, VPFW_VERSION);
 	}
@@ -107,13 +108,10 @@ function vpfw_init_gateway_class()
 			$this->tokenDefault = $this->get_option('token_default');
 			$this->defaultMemo = $this->get_option('default_memo');
 			$this->paymentTimeout = $this->get_option('payment_timeout');
+			$this->qrCodeSize = $this->get_option('qr_code_size');
 
 			// This action hook saves the settings
 			add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
-
-			// Register webhooks here for payment status callback
-			add_action('woocommerce_api_vite_payment_success', array($this, 'vite_payment_success_hook'));
-			add_action('woocommerce_api_vite_payment_failure', array($this, 'vite_payment_failure_hook'));
 
 			// Set gateway ID Woocommerce filters
 			add_filter('woocommerce_payment_gateways_setting_columns', array($this, 'vite_add_payment_gateway_column'));
@@ -139,7 +137,8 @@ function vpfw_init_gateway_class()
 		 */
 		public function get_icon()
 		{
-			if ($this->get_option('show_icons') === 'no') {
+			if ($this->get_option('show_icons') === 'no')
+			{
 				return '';
 			}
 
@@ -148,9 +147,11 @@ function vpfw_init_gateway_class()
 			$methods    = get_option('vite_payment_methods', array('vite', 'ethereum'));
 
 			// Load icon for each available payment method.
-			foreach ($methods as $m) {
+			foreach ($methods as $m)
+			{
 				$path = realpath($image_path . '/' . $m . '.png');
-				if ($path && dirname($path) === $image_path && is_file($path)) {
+				if ($path && dirname($path) === $image_path && is_file($path))
+				{
 					$url        = WC_HTTPS::force_https_url(plugins_url('/assets/img/' . $m . '.png', __FILE__));
 					$icon_html .= '<img width="26" src="' . esc_attr($url) . '" alt="' . esc_attr__($m, 'vite') . '" />';
 				}
@@ -177,16 +178,16 @@ function vpfw_init_gateway_class()
 			// 
 			$description_html .= '<script type="application/javascript">
 			window.txData = new Array()
+			window.txData["txAmountUSD"] = "' . $order_total . '"
+			window.txData["tokenDefault"] = "' . $this->tokenDefault . '"
 			window.txData["addressDefault"] = "' . $this->addressDefault . '"
-			window.txData["siteURL"] = "' . VPFW_URL . '"
 			window.txData["nodeURL"] = "' . $this->nodeURL . '"
 			window.txData["httpURL"] = "' . $this->httpURL . '"
-			window.txData["txAmount"] = "' . $order_total . '"
-			window.txData["tokenDefault"] = "' . $this->tokenDefault . '"
-			window.txData["defaultMemo"] = "' . $this->defaultMemo . '"
-			window.txData["paymentTimeout"] = ' . $this->paymentTimeout . '
 			window.txData["allowMultipleTokens"] = true
 			window.txData["displayMemo"] = true
+			window.txData["defaultMemo"] = "' . $this->defaultMemo . '"
+			window.txData["paymentTimeout"] = ' . $this->paymentTimeout . '
+			window.txData["qrCodeSize"] = ' . $this->qrCodeSize . '
 			</script>';
 
 			// Apply the tx QR code to the gateway description seen in checkout by customer
@@ -199,7 +200,7 @@ function vpfw_init_gateway_class()
 
 
 		/**
-		 * Get order total in token default
+		 * Get order total in USD
 		 * @return float
 		 */
 		function get_order_total()
@@ -208,30 +209,19 @@ function vpfw_init_gateway_class()
 			$order_id = absint(get_query_var('order-pay'));
 
 			// Gets order total from "pay for order" page.
-			if (0 < $order_id) {
+			if (0 < $order_id)
+			{
 				// Grab the order total (usd)
 				$order = wc_get_order($_GET['id']);
-				if ($order) {
+				if ($order)
+				{
 					$order_total = (float) $order->get_total();
 				}
-			} elseif (0 < WC()->cart->total) {
+			}
+			elseif (0 < WC()->cart->total)
+			{
 				$order_total = (float) WC()->cart->total;
 			}
-
-			$coinGeckoURL = "https://api.coingecko.com/api/v3/simple/price?ids=vite&vs_currencies=usd";
-
-			$curlObj = curl_init($coinGeckoURL);
-			curl_setopt($curlObj, CURLOPT_URL, $coinGeckoURL);
-			curl_setopt($curlObj, CURLOPT_RETURNTRANSFER, true);
-
-			$curlResp = curl_exec($curlObj);
-			curl_close($curlObj);
-
-			$jsonResp = json_decode($curlResp, true);
-			$currentPriceInUSD = $jsonResp['vite']['usd'];
-
-			if ($currentPriceInUSD > 0)
-				$order_total /= (float) $currentPriceInUSD;
 
 			return $order_total;
 		}
@@ -256,66 +246,147 @@ function vpfw_init_gateway_class()
 			echo '<td style="width:10%">' . $gateway->id . '</td>';
 		}
 
+	} // End of class WC_Vite_Gateway
 
-		/**
-		 * Payment success callback
-		 * @return array
-		 */
-		public function vite_payment_success_hook()
-		{
-			global $woocommerce;
-			$order_id = absint(get_query_var('order-pay'));
+} // End of function vpfw_init_gateway_class()
 
-			// Gets order total from "pay for order" page.
-			if (0 < $order_id) {
-				// Grab the order total (usd)
-				$order = wc_get_order($_GET['id']);
-				if ($order) {
-					// Received the payment
-					$order->payment_complete();
-					$order->reduce_order_stock();
-					// Note to customer
-					$order->add_order_note('Vite Payment Successful! Thank you!', false);
-					// Empty the cart
-					$woocommerce->cart->empty_cart();
-
-					// Redirect to the thank you page
-					return array(
-						'result' => 'success',
-						'redirect' => $this->get_return_url($order)
-					);
-				}
-			}
-
-			// Redirect to the thank you page
-			return array('result' => 'success');
-		}
-
-
-		/**
-		 * Payment failure callback
-		 */
-		public function vite_payment_failure_hook()
-		{
-			wc_add_notice('Vite Payment Failure, Try Again or Contact Store Owner.', 'error');
-		}
-	}
-}
-
-
-// Add our shortcode for use in wordpress/woocommerce site
-add_shortcode('vitepay_react_app', 'vitepay_react_app_function');
 
 /**
- * Payment success callback
+ * Add our shortcode for use in wordpress/woocommerce site
  * @return string
  */
-function vitepay_react_app_function()
+add_shortcode('vitepay_react_app', function ($hook)
 {
 	$description_html = '<div style="margin-left:auto; position: relative; width: 400px; height: 400px;">';
 	$description_html .= '<div id="vitepay-react-app">Loading...</div>';
 	$description_html .= '</div>';
-	$description_html .= '<script src="' . VPFW_URL . 'includes/vitepay-react-app/build/static/js/main.c0c31606.js"></script>';
+	$description_html .= '<script src="' . VPFW_URL . 'includes/vitepay-react-app/build/static/js/main.19e5cc3e.js"></script>';
 
 	return $description_html;
+});
+
+
+/**
+ * Load our react app scripts on checkout page
+ */
+add_action('wp_enqueue_scripts', function ($hook)
+{
+	// We only want to load scripts on checkout page
+	if (!is_checkout())
+	{
+		return;
+	}
+
+	$js_to_load = VPFW_URL . 'assets/js/vite-pay-for-wc.js';
+	$css_to_load = VPFW_URL . 'assets/css/vite-pay-for-wc.css';
+	$reactcss_to_load = VPFW_URL . 'includes/vitepay-react-app/build/static/css/main.6e23ac53.css';
+
+	wp_enqueue_style('vpfw_style', $css_to_load);
+	wp_enqueue_style('vpfw_style', $reactcss_to_load);
+	wp_enqueue_script('vpfw_react', $js_to_load, '', mt_rand(10,1000), true);
+
+	wp_localize_script('vpfw_react', 'vpfw_ajax', array('urls' =>
+														array( 'settings' => rest_url('vite-payments-for-woocommerce/v1/settings'),
+																'results' => rest_url('vite-payments-for-woocommerce/v1/results')),
+														'nonce' => wp_create_nonce('wp_rest'),));
+});
+
+
+
+/**
+ * Add our rest routes, registering the wordpress way
+ *
+ */
+add_action('rest_api_init', function ()
+{
+	register_rest_route('vite-payments-for-woocommerce/v1', '/settings', array(
+		'methods'  => WP_REST_Server::READABLE,
+		'callback' => 'vpfw_get_settings',
+		'permission_callback' => 'vpfw_rest_permissions_check'
+	));
+	register_rest_route('vite-payments-for-woocommerce/v1', '/results', array(
+		'methods'  => WP_REST_Server::CREATABLE,
+		'callback' => 'vpfw_update_results',
+		'permission_callback' => 'vpfw_rest_permissions_check'
+	));
+});
+
+
+/**
+ * Getter for settings saved to wp database
+ * used by frontend app
+ *
+ * @return WP_REST_RESPONSE
+ */
+function vpfw_get_settings($request)
+{
+	$payment_result = get_option('vpfw_payment_result');
+
+	return new WP_REST_RESPONSE(array('success' => true, 'value' => array('paymentResult' => !$payment_result ? '' : $payment_result)), 200 );
+}
+
+
+/**
+ * Save data to wp db from frontend app
+ *
+ * @return WP_REST_RESPONSE
+ */
+function vpfw_update_results($request)
+{
+	wc_add_notice('Vite Payment Processing...', 'notice');
+
+	// Store the values in wp_options table
+	$json = $request->get_json_params();
+	$updated_payment_result = update_option('vpfw_payment_result', $json['paymentResult']);
+
+	// Clear the cart and redirect to order complete page if response is success
+	if ($json['paymentResult'] == 'Success')
+	{
+		global $woocommerce;
+		$order_id = absint(get_query_var('order-pay'));
+		
+		// Gets order total from "pay for order" page.
+		if (0 < $order_id)
+		{
+			// Grab the order total (usd)
+			$order = wc_get_order($_GET['id']);
+			if ($order)
+			{
+				// Received the payment
+				$order->payment_complete();
+				$order->reduce_order_stock();
+				// Note to customer
+				wc_add_notice('Transaction Confirmed', 'success');
+				// Empty the cart
+				$woocommerce->cart->empty_cart();
+			}
+		}
+
+		// We don't know for sure whether this is a URL for this site,
+		// so we use wp_safe_redirect() to avoid an open redirect.
+		wp_safe_redirect( $this->get_return_url($order) );
+	}
+	else
+	{
+		// Handle payment failure
+		wc_add_notice('Vite Payment Failure, Try Again or Contact Store Owner.', 'error');
+	}
+
+	return new WP_REST_RESPONSE(array('success'	=> $updated_payment_result, 'value' => $json), 200);
+}
+
+
+/**
+ * Validate http requests and restrict to users with permission
+ *
+ * @return bool
+ */
+function vpfw_rest_permissions_check()
+{
+	// Restrict endpoint to users with manage_options capability
+	if (current_user_can('manage_options'))
+	{
+		return true;
+	}	
+	return new WP_Error('rest_forbidden', esc_html__('Sorry, an error has occurred.', 'vite-payments-for-woocommerce'), array('status' => 401));
 }

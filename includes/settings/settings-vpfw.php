@@ -73,6 +73,12 @@ $settings = array(
 		'type'           => 'text',
 		'default'        => '900'
 	),
+	'qr_code_size'    => array(
+		'title'        => __('QR Code Size', 'vite_pay_for_woo'),
+		'type'         => 'text',
+		'label'        => __('Desired QR code size in pixels', 'vite_pay_for_woo'),
+		'default'      => '300'
+	),
 	'show_icons'    => array(
 		'title'        => __('Show icons', 'vite_pay_for_woo'),
 		'type'         => 'checkbox',
