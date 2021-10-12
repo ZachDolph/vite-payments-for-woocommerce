@@ -1,11 +1,11 @@
 <h1 align="center">
-  <img src="https://raw.githubusercontent.com/zachdolph/vite-payments-for-woocommerce/master/.github/images/vite-logo%402x.png" width="224px"/><br/>
+  <img src="https://github.com/ZachDolph/vite-payments-for-woocommerce/blob/main/assets/img/vite-logo.png" width="224px"/><br/>
   Vite Payments for Woocommerce
 </h1>
 <p align="center">** NOT FOR USE IN PRODUCTION CODE...YET **
 Vite Payments for Woocommerce is blockchain technology powering your Woocommerce store, providing payment functionality in your store utilizing the Vite protocol.</p>
 
-<p align="center"><a href="https://github.com/zachdolph/vite-payments-for-woocommerce/releases" target="_blank"><img src="https://img.shields.io/badge/version-v1.0.0-blue?style=for-the-badge&logo=none" alt="Vite Payments for Woocommerce Version" /></a><img src="https://img.shields.io/badge/github/license/zachdolph/vite-payments-for-woocommerce?style=for-the-badge&logo=none" /><b><img src="https://img.shields.io/tokei/lines/github/zachdolph/vite-payments-for-woocommerce?logoColor=green&style=plastic" alt="Lines of Code" /></p>
+<p align="center"><a href="https://github.com/zachdolph/vite-payments-for-woocommerce/releases" target="_blank"><img src="https://img.shields.io/badge/version-v1.0.0-blue?style=for-the-badge&logo=none" alt="Vite Payments for Woocommerce Version" /></a><img src="https://img.shields.io/badge/github/license/zachdolph/vite-payments-for-woocommerce?style=for-the-badge&logo=none" /><br><img src="https://img.shields.io/tokei/lines/github/zachdolph/vite-payments-for-woocommerce?logoColor=green&style=plastic" alt="Lines of Code" /></p>
 
 ## 💎 Features
 
