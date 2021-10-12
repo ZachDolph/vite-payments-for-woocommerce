@@ -116,6 +116,26 @@ function vpfw_init_gateway_class()
 
 
 		/**
+		 * Add our gateway id column
+		 * @return
+		 */
+		function vite_add_payment_gateway_column($default_columns)
+		{
+			$default_columns = array_slice($default_columns, 0, 2) + array('id' => 'ID') + array_slice($default_columns, 2, 3);
+			return $default_columns;
+		}
+
+
+		/**
+		 * Print our gateway id column
+		 */
+		function vite_populate_gateway_column($gateway)
+		{
+			echo '<td style="width:10%">' . $gateway->id . '</td>';
+		}
+
+
+		/**
 		 * Plugin options (admin settings)
 		 */
 		public function init_form_fields()
@@ -131,52 +151,78 @@ function vpfw_init_gateway_class()
 			$this->http_url = $this->testmode ? $this->get_option('test_http_url') : $this->get_option('http_url');
 			$this->token_default = $this->get_option('token_default');
 			$this->default_memo = $this->get_option('default_memo');
-			$this->paymentTimeout = $this->timeRemaining = $this->get_option('payment_timeout');
+			$this->paymentTimeout = $this->get_option('payment_timeout');
+            $this->timeRemaining = array(   'minutes' => floor($this->paymentTimeout / 60.0),
+                                            'seconds' => ($this->paymentTimeout - floor($this->paymentTimeout / 60) * 60)   );
 			$this->qrCodeSize = $this->get_option('qr_code_size');
 		}
 
+
+		/**
+		 *
+		 */
         public function vpfw_enqueue_scripts()
         {
             // Only load our scripts on cart or checkout pages
             if ( ! is_cart() && ! is_checkout() && ! isset( $_GET['pay_for_order']))
-            {
-            	return;
-            } 
+                return;
          
             // Only load our scripts is VPFW is enabled
             if ($this->enabled === 'no')
-            {
-            	return;
-            }
+                return;
 
-            //
+            // CSS to load for plugin
             $vpfw_css_to_load = VPFW_URL . 'assets/css/vite-pay-for-wc.css';
-            $vpfw_js_to_load = VPFW_URL . 'assets/js/vite-pay-for-wc.js';
 
-            //
-            wp_register_script( 'vpfw_js_script', $vpfw_js_to_load, array( 'jquery') );
-            //
-            wp_localize_script( 'vpfw_js_script', 'vpfw_ajax_data', array( 'ajaxURL' => admin_url('admin-ajax.php'), 
-                                                                            'nonce' => $this->nonce,
-                                                                            'txAmountUSD' => $this->get_order_total(),
-                                                                            'tokenDefault' => $this->token_default,
-                                                                            'addressDefault' => $this->address_default,
-                                                                            'nodeURL' => $this->node_url,
-                                                                            'httpURL' => $this->http_url,
-                                                                            'allowMultipleTokens' => true,
-                                                                            'shouldDisplayMemo' => true,
-                                                                            'defaultMemo' => $this->default_memo,
-                                                                            'paymentTimeout' => $this->paymentTimeout,
-                                                                            'qrCodeSize' => $this->qrCodeSize  ));   
-            //
-            wp_enqueue_script('vpfw_js_script');
-            wp_enqueue_style('vpfw_css_style', $vpfw_css_to_load);
+            // JS to load
+            $vpfw_async_js_to_load = VPFW_URL . 'assets/js/vite-pay-for-wc-async.js';
+            $vpfw_qrlib_js_to_load = VPFW_URL . 'assets/js/lib/qr-code/qrcode.min.js';
+            $vpfw_crypto_js_to_load = VPFW_URL . 'assets/js/lib/crypto-js-aes-json/crypto-js-aes-json.js';
+
+            // CryptoJS module
+            wp_enqueue_script(  'module_cryptojs_handle', 'https://unpkg.com/crypto-js' );
+
+            // Load our js scripts using handles
+            wp_enqueue_script( 'async_js_script_handle', $vpfw_async_js_to_load);
+            wp_enqueue_script( 'qrlib_js_script_handle', $vpfw_qrlib_js_to_load);
+            wp_enqueue_script( 'async_encrypt_js_script_handle', $vpfw_crypto_js_to_load);
+
+            // Encoding and big numbers
+            wp_enqueue_script(  'module_js_big64_handle', 'https://unpkg.com/js-base64' );
+            wp_enqueue_script(  'module_bigjs_handle', 'https://unpkg.com/big.js' );
+
+            // Vite modules
+            wp_enqueue_script(  'module_vitejs_handle', 'https://unpkg.com/@vite/vitejs' );
+            wp_enqueue_script(  'module_vitejs_ws_handle', 'https://unpkg.com/@vite/vitejs-ws' );
+            wp_enqueue_script(  'module_vitejs_http_handle', 'https://unpkg.com/@vite/vitejs-http' );
+
+            // For posting responses back
+            wp_enqueue_script('jq_module_script_handle', 'https://unpkg.com/jquery', array('jquery'), '', true);
+            wp_localize_script('jq_module_script_handle', 'vpfwAjaxVar', array('ajaxurl' => admin_url('admin-ajax.php')));
+            add_action('wp_ajax_post_vpfw_result', 'post_vpfw_result');
+
+            // Localize config data object for the async js script
+            wp_localize_script( 'async_js_script_handle',
+                                'vpfw_async_js_data',
+                                array(  'txAmountUSD' => $this->get_order_total(),
+                                        'tokenDefault' => $this->token_default,
+                                        'addressDefault' => $this->address_default,
+                                        'nodeURL' => $this->node_url,
+                                        'httpURL' => $this->http_url,
+                                        'allowMultipleTokens' => true,
+                                        'shouldDisplayMemo' => true,
+                                        'defaultMemo' => $this->default_memo,
+                                        'paymentTimeout' => $this->paymentTimeout,
+                                        'qrCodeSize' => $this->qrCodeSize  ));
+
+            // Load our css style
+            wp_enqueue_style('css_style_handle', $vpfw_css_to_load);
         }
 
 
 		/**
 		 * Get and set gateway icons using woo filter.
-		 * @return string
+		 * @return String
 		 */
 		public function get_icon()
 		{
@@ -206,7 +252,7 @@ function vpfw_init_gateway_class()
 
 		/**
 		 * Set gateway description to display tx QR code
-		 * @return string
+		 * @return String
 		 */
 		public function get_description()
 		{
@@ -216,28 +262,18 @@ function vpfw_init_gateway_class()
 				return;
 			}
 
-
             $description_html = '<div class="vitepayDiv">';
-            $description_html .= '<form class="vitepayForm">';
-            $description_html .= '<p>The transaction will expire in "'. $this->setInterval($this->timeRemaining) .'"</p>';
-            //<QRCode size="'.$this->qrCodeSize.'" class"vitepayQRCode" value="'..'" />
-            //<TransactionForm />
-            //<div className={styles.vitepayForm} style = {{display: status === 0 ? 'block' : 'none'}}>
-            //    {allowMultipleTokens && (<label>
-            //        {options.length > 0 ? (
-            //            <StyledSelect
-            //                class="vitepayDropdown"}"
-            //                options={options}
-            //                values={[options.find(opt => opt.tokenId === tokenId)]}
-            //                ref={inputToken}
-            //                onChange={(e) => { setTokenId(e[0]?.tokenId); }}
-            //            />
-            //        ) : <p>Loading ....</p>}    
-            //    </label>)}
-            //</div>
+            $description_html .= '<form id="vitepayFormId" class="vitepayForm">';
+            $description_html .= '<p id="vpfwTimerText"></p>';
+            $description_html .= '<script type="text/javascript">startVPFWTimer();</script>';
+            $description_html .= '<div id="qrcode" class"vitepayQRCode"></div><script type="text/javascript">generateQRCode()</script>';
+            $description_html .= '<div id="TransactionForm"></div><script type="text/javascript">generateTxForm()</script>';
             $description_html .= '</form>';
             $description_html .= '</div>';
-
+            $description_html .= '<div class="vitepayForm" style="display: block;">';
+            if ($this->allowMultipleTokens)
+                $description_html .= '<label id="tokenOptionsLabel"></label>';
+            $description_html .= '</div>';
             //switch ($this->paymentStatus)
             //{
             //    case VPFW_SUCCESS:
@@ -258,36 +294,6 @@ function vpfw_init_gateway_class()
 			// Need to get exchange rate other than Vite (token default)
 			// Do we need to add a spread to handle volatility and lock in price?
 		}
-
-
-        /**
-		 * Set countdown timer for tx expiration
-		 * @return Ev::iteration
-		 */
-        public function setInterval($seconds)
-        {
-            // Create and launch timer repeating every second
-            return $w2 = new EvTimer(0, 1, function ($w)
-            {
-                // '.floor($this->timeRemaining / 60).'m '.($this->timeRemaining - floor($this->timeRemaining / 60) * 60)).'s';
-                return Ev::iteration();
-            
-                // Stop the watcher after seconds passed in
-                Ev::iteration() == $seconds and $w->stop();
-                // Stop the watcher if further calls cause more than 2x iterations
-                Ev::iteration() >= (2 * $seconds) and $w->stop();
-            });
-        }
-
-        /**
-		 * Generate QR code for new transaction 
-		 * @return img
-		 */
-        public function getQRCode()
-        {
-            // vite:${address}?tti=${tokenId}&amount=${amount}&data=${encode(memo).replaceAll("=", "")}
-        }
-
 
 
 		/**
@@ -316,41 +322,22 @@ function vpfw_init_gateway_class()
 
 			return $order_total;
 		}
-
-
-		/**
-		 * Add our gateway id column
-		 * @return
-		 */
-		function vite_add_payment_gateway_column($default_columns)
-		{
-			$default_columns = array_slice($default_columns, 0, 2) + array('id' => 'ID') + array_slice($default_columns, 2, 3);
-			return $default_columns;
-		}
-
-
-		/**
-		 * Print our gateway id column
-		 */
-		function vite_populate_gateway_column($gateway)
-		{
-			echo '<td style="width:10%">' . $gateway->id . '</td>';
-		}
 		
 		
 		/**
 		 * Post results after payment is complete
 		 *
-		 * @return string
+		 * @return String
 		 */
-		function post_vpfw_result()
+		function post_vpfw_result($posted_result)
 		{
-            if ( ! wp_verify_nonce( $_REQUEST['nonce'], 'post_vpfw_result_nonce'))
-            {
-               return;
-            }
+            //if ( ! wp_verify_nonce( $_REQUEST['nonce'], 'post_vpfw_result_nonce'))
+            //{
+            //   return;
+            //}
 
             $posted_result = $_REQUEST['result'];
+            $posted_tx = $_REQUEST['tx'];
 
             if ($posted_result) // Success
             {
@@ -383,19 +370,48 @@ function vpfw_init_gateway_class()
                 // Handle payment failure
                 wc_add_notice('Vite Payment Failure, Try Again or Contact Store Owner.', 'error');
             }
-            
-            if(empty($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')
-            {
-                header("Location: ".$_SERVER["HTTP_REFERER"]);
-                die();
-                return;
-            }
-        
-            die();
-            return $result['type'] = $posted_result ? 'success' : 'error';
 		}
 
 
 	} // End of class WC_Vite_Gateway
 
 } // End of function vpfw_init_gateway_class()
+
+
+
+/**
+ * Add type="module" to module_handle 
+ * Add async or defer attributes to script enqueues
+ *
+ * @param  String  $tag     The original enqueued <script src="...> tag
+ * @param  String  $handle  The registered unique name of the script
+ * @return String  $tag     The modified <script async|defer src="...> tag
+ */
+// only on the front-end
+if(!is_admin())
+{
+    function add_asyncdefer_attribute($tag, $handle, $src)
+    {
+        if (strpos($handle, 'module') !== false)
+        {
+            // Add type="module" to module_handle
+            $tag = '<script type="module" src="'. $src .'"></script>';
+        }
+
+        if (strpos($handle, 'async') !== false)
+        {
+            // if handle/name of the registered script has 'async' in it
+            // return the tag with the async attribute
+            return str_replace( '<script ', '<script async ', $tag );
+        }
+        else if (strpos($handle, 'defer') !== false)
+        {
+            // if handle/name of the registered script has 'defer' in it
+            // return the tag with the defer attribute
+            return str_replace( '<script ', '<script defer ', $tag );
+        }
+        
+        return $tag;
+    }
+    add_filter('script_loader_tag', 'add_asyncdefer_attribute', 10, 2);
+}
