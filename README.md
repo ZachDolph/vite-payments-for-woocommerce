@@ -13,7 +13,7 @@ Vite Payments for Woocommerce is blockchain technology powering your Woocommerce
 - 🗳️ Feature 2 Temp
 - 📈 Feature 3 Temp
 - ✨ Feature 4 Temp
-- 📖 Docs: https://github.com/zachdolph/vite-payments-for-woocommerce/wiki/Command-deploy
+- 📖 Docs: https://vite-payments-for-woocommerce.gitbook.io/docs/
 
 ## ⚡️ Quick Start
 
