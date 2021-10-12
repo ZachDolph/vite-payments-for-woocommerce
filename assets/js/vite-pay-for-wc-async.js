@@ -114,7 +114,72 @@ async function getTokenList()
         return;
     });
 
-    return await vitexProvider.request('exchange-rate');
+    // FIX ME - zdolph 10/11/21
+
+    // Get All Tokens //
+    // GET /api/v2/tokens
+        // category 	        STRING      NO      Token category, [quote,all], default all
+        // tokenSymbolLike      STRING      NO      Token symbol. For example, VITE. Fuzzy search supported.
+        // offset 	            INTEGER     NO      Search starting index, starts at 0, default 0
+        // limit 	            INTEGER     NO      Search limit, max 500, default 500
+
+        // "tokenId": "tti_322862b3f8edae3b02b110b1",
+        // "name": "BTC Token",
+        // "symbol": "BTC-000",
+        // "originalSymbol": "BTC",
+        // "totalSupply": "2100000000000000",
+        // "owner": "vite_ab24ef68b84e642c0ddca06beec81c9acb1977bbd7da27a87a",
+        // "tokenDecimals": 8,
+        // "urlIcon": null
+
+
+    // Get Token Detail //
+    // GET /api/v2/token/detail
+        //  tokenSymbol 	STRING 	NO 	Token symbol. For example, VITE
+        //  tokenId 	    STRING 	NO 	Token id. For example, tti_5649544520544f4b454e6e40
+
+        // "tokenId": "tti_322862b3f8edae3b02b110b1",
+        // "name": "BTC Token",
+        // "symbol": "BTC-000",
+        // "originalSymbol": "BTC",
+        // "totalSupply": "2100000000000000",
+        // "publisher": "vite_ab24ef68b84e642c0ddca06beec81c9acb1977bbd7da27a87a",
+        // "tokenDecimals": 8,
+        // "tokenAccuracy": "0.00000001",
+        // "publisherDate": null,
+        // "reissue": 2,
+        // "urlIcon": null,
+        // "gateway": null,
+        // "website": null,
+        // "links": null,
+        // "overview": null
+
+
+    // Get Exchange Rate //
+    // GET /api/v2/exchange-rate
+        //  tokenSymbols 	STRING 	NO 	Trading pairs, split by ",". For example, VITE,ETH-000
+        //  tokenIds 	    STRING 	NO 	Token ids, split by ",". For example, tti_5649544520544f4b454e6e40,tti_5649544520544f4b454e6e40
+
+        // "tokenId": "tti_5649544520544f4b454e6e40",
+        // "tokenSymbol": "VITE",
+        // "usdRate": 0.03,
+        // "cnyRate": 0.16
+
+
+    // Get All Trading Pairs //   
+    // GET /api/v2/markets
+        //   offset     INTEGER 	NO 	Search starting index, starts at 0, default 0
+        //   limit 	    INTEGER 	NO 	Search limit, max 500, default 500
+
+        // "symbol": "BTC-000_USDT",
+        // "tradeTokenSymbol": "BTC-000",
+        // "quoteTokenSymbol": "USDT-000",
+        // "tradeToken": "tti_322862b3f8edae3b02b110b1",
+        // "quoteToken": "tti_973afc9ffd18c4679de42e93",
+        // "pricePrecision": 8,
+        // "quantityPrecision": 8
+
+    //return await vitexProvider.request('exchange-rate');
  }
 
 
@@ -142,6 +207,7 @@ async function generateQRCode()
     });
 
 
+    // EXAMPLE USAGE
     //<div id="qrcode"></div>
     //<script type="text/javascript">
     //new QRCode(document.getElementById("qrcode"), "http://jindo.dev.naver.com/collie");
@@ -166,7 +232,7 @@ async function generateTxForm(iteration = 0)
 
     if (tokenOptions.length > 0) 
     {
-        // FIXME
+        // FIX ME - zdolph - 10/11/21
         txInnerHtml = '<StyledSelect />';
         txInnerHtml += '<script type="text/javascript">generateTokenList()</script>';
         document.getElementById("vpfwTimerText").innerHTML = txInnerHtml;
@@ -178,21 +244,6 @@ async function generateTxForm(iteration = 0)
             generateTxForm(++iteration);
         }, 1000)
     }
-    //<div id="TransactionForm"></div><script type="text/javascript">generateTxForm()</script>
-    //<TransactionForm />
-    //<div className={styles.vitepayForm} style = {{display: status === 0 ? 'block' : 'none'}}>
-    //    {allowMultipleTokens && (<label>
-    //        {tokenOptions.length > 0 ? (
-    //            <StyledSelect
-    //                class="vitepayDropdown"}"
-    //                tokenOptions={tokenOptions}
-    //                values={[tokenOptions.find(opt => opt.tokenId === tokenId)]}
-    //                ref={inputToken}
-    //                onChange={(e) => { setTokenId(e[0]?.tokenId); }}
-    //            />
-    //        ) : <p>Loading ....</p>}    
-    //    </label>)}
-    //</div>
 }
 
 
@@ -265,6 +316,11 @@ async function startVPFWTimer()
  
 }
 
+
+/**
+ *
+ *
+ */
 async function postTxResult(result)
 {
     if (!result)

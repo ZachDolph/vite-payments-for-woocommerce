@@ -274,25 +274,10 @@ function vpfw_init_gateway_class()
             if ($this->allowMultipleTokens)
                 $description_html .= '<label id="tokenOptionsLabel"></label>';
             $description_html .= '</div>';
-            //switch ($this->paymentStatus)
-            //{
-            //    case VPFW_SUCCESS:
-            //        // {(state === 1) && <p>Transaction Complete&#33;</p>}
-            //        break;
-            //    case VPFW_FAILURE:
-            //        // {state === -1 && <p>Transaction has failed</p>}
-            //        break;
-            //    default:
-            //        break;
-            //}
 
 
 			// Apply the tx QR code to the gateway description seen in checkout by customer
 			return apply_filters('woocommerce_gateway_description', $description_html, $this->id);
-
-			// TODO
-			// Need to get exchange rate other than Vite (token default)
-			// Do we need to add a spread to handle volatility and lock in price?
 		}
 
 
@@ -370,6 +355,16 @@ function vpfw_init_gateway_class()
                 // Handle payment failure
                 wc_add_notice('Vite Payment Failure, Try Again or Contact Store Owner.', 'error');
             }
+
+            //if(empty($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')
+            //{
+            //    header("Location: ".$_SERVER["HTTP_REFERER"]);
+            //    die();
+            //    return;
+            //}
+        //
+            //die();
+            //return $result['type'] = $posted_result ? 'success' : 'error';
 		}
 
 
