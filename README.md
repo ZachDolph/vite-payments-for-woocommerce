@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="https://github.com/ZachDolph/vite-payments-for-woocommerce/blob/main/assets/img/vite-logo.png" width="224px"/><br/>
+  <img src="https://github.com/ZachDolph/vite-payments-for-woocommerce/blob/c406b2cb58c9f20c02823765c43228b82155d5ce/assets/img/vite-cover-milltay-2.png" width="1000px"/><br/>
   Vite Payments for Woocommerce
 </h1>
 <p align="center">** NOT FOR USE IN PRODUCTION CODE...YET **<br>
